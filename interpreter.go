@@ -100,8 +100,24 @@ func unpackRecords(data []byte, dt *DbfTable) {
 	dt.dataStore = data // TODO: Deprecate?  At least reduce scope to just its records.
 }
 
+// expectedContentSize is the size the header implies for the file's content: the
+// header itself plus every record it declares. The optional 0x1a end-of-file
+// marker sits beyond this.
+func expectedContentSize(dt *DbfTable) uint32 {
+	return uint32(dt.numberOfBytesInHeader) + dt.numberOfRecords*uint32(dt.lengthOfEachRecord)
+}
+
 func unpackFooter(data []byte, dt *DbfTable) {
-	dt.eofMarker = data[len(data)-1]
+	// Default to the canonical marker and take the file's own only when the file
+	// actually ends in one. The marker is optional, so a file of exactly the size
+	// the header implies is complete — and the byte it ends on is a record's last,
+	// not a footer. Normalising here keeps two things right: the footer check,
+	// which would otherwise compare that record byte against 0x1a, and
+	// SaveToFile, which appends dt.eofMarker to whatever it writes.
+	dt.eofMarker = eofMarker
+	if uint32(len(data)) == expectedContentSize(dt)+1 {
+		dt.eofMarker = data[len(data)-1]
+	}
 }
 
 func verifyTableAgainstRawBytes(s []byte, dt *DbfTable) {
@@ -109,6 +125,10 @@ func verifyTableAgainstRawBytes(s []byte, dt *DbfTable) {
 	verifyTableAgainstRawFooter(s, dt)
 }
 
+// verifyTableAgainstRawFooter rejects a file that ends with a byte other than the
+// marker. A file with no marker at all is not rejected here — unpackFooter has
+// already given it the canonical one, because the byte it ends on belongs to a
+// record — and a file with too many bytes is caught by the size check.
 func verifyTableAgainstRawFooter(s []byte, dt *DbfTable) {
 	if dt.eofMarker != eofMarker {
 		panic(fmt.Errorf("encoded footer is %v, but actual footer is %d", eofMarker, s[len(s)-1]))
@@ -119,11 +139,21 @@ func verifyTableAgainstRawHeader(s []byte, dt *DbfTable) {
 	verifyByteArraySizeAgainstExpected(s, dt)
 }
 
+// verifyByteArraySizeAgainstExpected checks that the file holds exactly the
+// header and the records the header declares, so that a truncated file is
+// rejected rather than read as if complete.
+//
+// The 0x1a end-of-file marker is optional: dBase writes it, plenty of other
+// tools do not. A file one byte short of the size with the marker is therefore
+// complete, not truncated — ZillowNeighborhoods-NY.dbf in the Workbench
+// sampledata is exactly that, and refusing it was this library's bug. Anything
+// else still fails: bytes beyond the marker are as wrong as bytes missing.
 func verifyByteArraySizeAgainstExpected(s []byte, dt *DbfTable) {
-	expectedSize := uint32(dt.numberOfBytesInHeader) + dt.numberOfRecords*uint32(dt.lengthOfEachRecord) + 1
+	contentSize := expectedContentSize(dt)
+	withMarkerSize := contentSize + 1
 	actualSize := uint32(len(s))
-	if actualSize != expectedSize {
-		panic(fmt.Errorf("encoded content is %d bytes, but header expected %d", actualSize, expectedSize))
+	if actualSize != contentSize && actualSize != withMarkerSize {
+		panic(fmt.Errorf("encoded content is %d bytes, but header expected %d (%d without the end-of-file marker)", actualSize, withMarkerSize, contentSize))
 	}
 }
 

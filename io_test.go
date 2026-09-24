@@ -244,6 +244,7 @@ func TestNewFromFile_ReaderPanics_Errors(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reader = panicReader
+	t.Cleanup(func() { reader = io.ReadFull })
 	_, readError := NewFromFile(lessThanActualRecordsFile, testEncoding)
 
 	g.Expect(readError).ToNot(BeNil())
@@ -258,6 +259,7 @@ func TestNewFromFile_ReaderErrors_Errors(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	reader = errorReader
+	t.Cleanup(func() { reader = io.ReadFull })
 	_, readError := NewFromFile(lessThanActualRecordsFile, testEncoding)
 
 	g.Expect(readError).ToNot(BeNil())
@@ -273,6 +275,7 @@ func TestNewFromFile_OpenErrors_Errors(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fsWrapper = openErrorFileSystem{}
+	t.Cleanup(func() { fsWrapper = osFileSystem{} })
 	_, readError := NewFromFile(lessThanActualRecordsFile, testEncoding)
 
 	g.Expect(readError).ToNot(BeNil())
@@ -291,6 +294,7 @@ func TestNewFromFile_StatErrors_Errors(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	fsWrapper = statErrorFileSystem{}
+	t.Cleanup(func() { fsWrapper = osFileSystem{} })
 	_, readError := NewFromFile(lessThanActualRecordsFile, testEncoding)
 
 	g.Expect(readError).ToNot(BeNil())
@@ -317,6 +321,7 @@ func TestSaveToFile_CreateErrors_Errors(t *testing.T) {
 	tempFilename := filepath.Join("testdata", "tempSavedTable.dbf")
 
 	fsWrapper = createErrorFileSystem{}
+	t.Cleanup(func() { fsWrapper = osFileSystem{} })
 	saveErr := SaveToFile(tableFromBytes, tempFilename)
 
 	g.Expect(saveErr).ToNot(BeNil())
@@ -343,6 +348,7 @@ func TestSaveToFile_CreatePanics_Errors(t *testing.T) {
 	tempFilename := filepath.Join("testdata", "tempSavedTable.dbf")
 
 	fsWrapper = createPanicFileSystem{}
+	t.Cleanup(func() { fsWrapper = osFileSystem{} })
 	saveErr := SaveToFile(tableFromBytes, tempFilename)
 
 	g.Expect(saveErr).ToNot(BeNil())
