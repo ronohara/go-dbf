@@ -1,8 +1,9 @@
-module github.com/LindsayBradford/go-dbf
+module github.com/ronohara/go-dbf
 
 // 	To sync the vendor directory, run:  go mod vendor from the directory housing this file.
 
-go 1.23
+go 1.23.0
+
 require (
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/onsi/gomega v1.36.1
