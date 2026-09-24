@@ -1,11 +1,21 @@
 # Fork updates — 2026-09-24
 
-Three changes on top of tag `v1.0.0`, all prompted by using the library for real:
-reading a dBase file that arrived as a user upload in the Statisticians Workbench.
+Three changes on top of commit `8b6d3c8` ("Own the fork: module path, go directive,
+README"), all prompted by using the library for real: reading a dBase file that
+arrived as a user upload in the Statisticians Workbench.
 
-**Status: uncommitted.** None of this is in a commit yet, and the `v1.0.0` tag has
-not been pushed, so the module proxy serves neither the tag nor any of the work
-below.
+**Status: released as `v1.0.1`** — commit `9b7a5c7`, annotated tag pushed, and the
+published module fetched back from the module proxy and exercised against the same
+fixture this work was driven by (579 records, detected encoding `windows-1252`).
+
+Two notes on the history around it:
+
+- these changes were first described as sitting on top of a `v1.0.0` tag. That tag was
+deleted on 2026-09-24 rather than published: it predates these fixes, so publishing it
+would have advertised a reader that refuses a file without the end-of-file marker. The
+commit it pointed at is untouched, and `v1.0.1` is now the fork's only tag.
+- the module proxy's `@latest` still resolves to an earlier cached pseudo-version.
+Pin `v1.0.1` rather than relying on `@latest` until that cache expires.
 
 ---
 
